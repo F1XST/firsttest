@@ -1,1 +1,164 @@
-66011211105 kittipong jiamtua IT
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Price Stock</title>
+    <!-- โหลด Chart.js สำหรับทำกราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #00ffcc;
+            text-transform: uppercase;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .card {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .game-list {
+            display: flex;
+            justify-content: space-between;
+            background-color: #2a2a2a;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .game-list:hover {
+            background-color: #3a3a3a;
+            border-left: 4px solid #00ffcc;
+        }
+        .game-title {
+            font-weight: bold;
+        }
+        .game-price {
+            color: #ff4757;
+            font-weight: bold;
+        }
+        .price-down {
+            color: #2ed573; /* สีเขียวเวลาราคาลง (ดีต่อคนซื้อ) */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎮 Game Price Index (GTX)</h1>
+        
+        <div class="dashboard">
+            <!-- ส่วนแสดงกราฟ -->
+            <div class="card">
+                <h2>📈 แนวโน้มราคา: <span id="selected-game">Elden Ring</span></h2>
+                <canvas id="priceChart"></canvas>
+            </div>
+
+            <!-- ส่วนรายชื่อเกม -->
+            <div class="card">
+                <h2>กระดานราคาเกม (คลิกเพื่อดูกราฟ)</h2>
+                <div id="game-container">
+                    <!-- รายชื่อเกมจะถูกสร้างด้วย JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลจำลองของเกมและประวัติราคา (อารมณ์เหมือนกราฟหุ้น 6 เดือนย้อนหลัง)
+        const gameData = [
+            {
+                id: 1,
+                name: "Elden Ring",
+                currentPrice: 1390,
+                status: "down",
+                history: [1790, 1790, 1590, 1590, 1390, 1390] // มกราคม - มิถุนายน
+            },
+            {
+                id: 2,
+                name: "Cyberpunk 2077",
+                currentPrice: 890,
+                status: "down",
+                history: [1899, 1290, 990, 890, 1290, 890]
+            },
+            {
+                id: 3,
+                name: "Grand Theft Auto V",
+                currentPrice: 600,
+                status: "stable",
+                history: [600, 450, 600, 300, 600, 600]
+            }
+        ];
+
+        // ตั้งค่าเริ่มต้นของกราฟ
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        let priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.'], // แกน X (เวลา)
+                datasets: [{
+                    label: 'ราคา (บาท)',
+                    data: gameData[0].history, // ดึงข้อมูลเกมแรกมาแสดงก่อน
+                    borderColor: '#00ffcc',
+                    backgroundColor: 'rgba(0, 255, 204, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3 // ทำให้เส้นกราฟโค้งมน
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+
+        // ฟังก์ชันสำหรับอัปเดตกราฟเมื่อคลิกเลือกเกม
+        function updateChart(gameIndex) {
+            const game = gameData[gameIndex];
+            document.getElementById('selected-game').innerText = game.name;
+            
+            priceChart.data.datasets[0].data = game.history;
+            priceChart.update();
+        }
+
+        // สร้างรายการเกมบนหน้าเว็บ
+        const gameContainer = document.getElementById('game-container');
+        gameData.forEach((game, index) => {
+            const div = document.createElement('div');
+            div.className = 'game-list';
+            div.innerHTML = `
+                <span class="game-title">${game.name}</span>
+                <span class="game-price ${game.status === 'down' ? 'price-down' : ''}">
+                    ฿${game.currentPrice} 
+                    ${game.status === 'down' ? '▼' : '-'}
+                </span>
+            `;
+            // เพิ่ม Event เมื่อคลิกให้เปลี่ยนกราฟ
+            div.onclick = () => updateChart(index);
+            gameContainer.appendChild(div);
+        });
+    </script>
+</body>
+</html>
