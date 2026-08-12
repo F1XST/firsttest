@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Price Stock - Top 20</title>
+    <title>Game Price Stock - Top 20 & Details</title>
     <!-- โหลด Chart.js สำหรับทำกราฟ -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -15,7 +15,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
@@ -23,39 +23,44 @@
             color: #00ffcc;
             text-transform: uppercase;
             margin-bottom: 30px;
+            letter-spacing: 2px;
         }
+        
+        /* เลย์เอาต์หลัก แบ่งเป็น ซ้าย (กราฟ+รายละเอียด) และ ขวา (รายชื่อเกม) */
         .dashboard {
             display: grid;
-            grid-template-columns: 2fr 1fr; /* แบ่งเลย์เอาต์: กราฟใหญ่กว่ารายชื่อ */
+            grid-template-columns: 2fr 1fr;
             gap: 20px;
         }
-        @media (max-width: 800px) {
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
             .dashboard {
-                grid-template-columns: 1fr; /* ถ้าจอเล็ก ให้เรียงบนลงล่าง */
+                grid-template-columns: 1fr;
             }
         }
+
         .card {
             background-color: #1e1e1e;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+
+        /* ส่วนของรายชื่อเกม */
         .game-list-container {
-            max-height: 500px; /* จำกัดความสูงของกระดานเกม */
-            overflow-y: auto;  /* เพิ่ม Scrollbar แนวนอนเมื่อเกมเยอะ */
+            max-height: 700px;
+            overflow-y: auto;
             padding-right: 10px;
         }
-        /* ตกแต่ง Scrollbar ให้เข้ากับธีม */
-        .game-list-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .game-list-container::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
-        .game-list-container::-webkit-scrollbar-thumb:hover {
-            background: #00ffcc;
-        }
+        .game-list-container::-webkit-scrollbar { width: 6px; }
+        .game-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        .game-list-container::-webkit-scrollbar-thumb:hover { background: #00ffcc; }
 
         .game-item {
             display: flex;
@@ -73,41 +78,84 @@
             background-color: #3a3a3a;
             border-left: 4px solid #00ffcc;
         }
-        .game-title {
-            font-weight: bold;
+        .game-title { font-weight: bold; font-size: 0.95em; }
+        .game-price { font-weight: bold; font-size: 0.95em; }
+        .price-down { color: #2ed573; }
+        .price-up { color: #ff4757; }
+        .price-stable { color: #a4b0be; }
+        .rank { color: #888; font-size: 0.8em; margin-right: 10px; }
+
+        /* ส่วนของรายละเอียดเกม (รูป + ข้อความ) */
+        .game-details {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        @media (max-width: 600px) {
+            .game-details {
+                flex-direction: column;
+            }
+        }
+        .game-cover {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            border: 1px solid #333;
+        }
+        .game-info h3 {
+            margin-top: 0;
+            color: #00ffcc;
+            font-size: 1.5em;
+        }
+        .game-info p {
+            line-height: 1.6;
+            color: #cccccc;
             font-size: 0.95em;
         }
-        .game-price {
-            color: #ff4757;
-            font-weight: bold;
-            font-size: 0.95em;
-        }
-        .price-down { color: #2ed573; } /* เขียว */
-        .price-up { color: #ff4757; }   /* แดง */
-        .price-stable { color: #a4b0be; } /* เทา */
-        
-        .rank {
-            color: #888;
+        .tag {
+            display: inline-block;
+            background-color: #333;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 4px;
             font-size: 0.8em;
-            margin-right: 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🎮 Game Price Index (Top 20)</h1>
+        <h1>🎮 Game Market Index</h1>
         
         <div class="dashboard">
-            <!-- ส่วนแสดงกราฟ -->
-            <div class="card">
-                <h2>📈 แนวโน้มราคา 6 เดือนย้อนหลัง: <br><span id="selected-game" style="color:#00ffcc;">Elden Ring</span></h2>
-                <canvas id="priceChart"></canvas>
+            <!-- ฝั่งซ้าย: กราฟ + รายละเอียด -->
+            <div class="left-panel">
+                <!-- กราฟราคา -->
+                <div class="card">
+                    <h2>📈 แนวโน้มราคา 6 เดือน: <span id="selected-game" style="color:#00ffcc;"></span></h2>
+                    <canvas id="priceChart"></canvas>
+                </div>
+
+                <!-- รายละเอียดเกม -->
+                <div class="card game-details" id="detail-section">
+                    <img id="detail-image" class="game-cover" src="" alt="Game Cover">
+                    <div class="game-info">
+                        <h3 id="detail-title">ชื่อเกม</h3>
+                        <div>
+                            <span class="tag" id="detail-dev">Developer</span>
+                            <span class="tag" id="detail-genre">Genre</span>
+                        </div>
+                        <p id="detail-desc">คำอธิบายเกม...</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- ส่วนรายชื่อเกม (มี Scrollbar) -->
+            <!-- ฝั่งขวา: รายชื่อเกม -->
             <div class="card">
-                <h2>กระดานราคา (คลิกเพื่อดู)</h2>
+                <h2>กระดานราคา (Top 20)</h2>
                 <div class="game-list-container" id="game-container">
                     <!-- รายชื่อเกมจะถูกสร้างด้วย JavaScript -->
                 </div>
@@ -116,31 +164,31 @@
     </div>
 
     <script>
-        // ข้อมูลจำลองเกม Top 20 พร้อมประวัติราคา 6 เดือน (ม.ค. - มิ.ย.)
+        // ข้อมูลจำลองเกม Top 20 เพิ่มรูปภาพและรายละเอียด (ใช้ App ID จาก Steam เพื่อดึงรูป)
         const gameData = [
-            { name: "Elden Ring", current: 1390, status: "down", history: [1790, 1790, 1790, 1590, 1390, 1390] },
-            { name: "Baldur's Gate 3", current: 1999, status: "stable", history: [1999, 1999, 1999, 1999, 1999, 1999] },
-            { name: "Cyberpunk 2077", current: 890, status: "down", history: [1899, 1290, 890, 890, 1290, 890] },
-            { name: "Helldivers 2", current: 1290, status: "stable", history: [1290, 1290, 1290, 1290, 1290, 1290] },
-            { name: "Red Dead Redemption 2", current: 494, status: "down", history: [1499, 1499, 494, 1499, 494, 494] },
-            { name: "Grand Theft Auto V", current: 600, status: "stable", history: [600, 600, 300, 600, 600, 600] },
-            { name: "Hogwarts Legacy", current: 950, status: "down", history: [1890, 1890, 1490, 950, 950, 950] },
-            { name: "The Witcher 3: Wild Hunt", current: 299, status: "down", history: [1059, 299, 1059, 299, 299, 299] },
-            { name: "Palworld", current: 590, status: "up", history: [531, 531, 590, 590, 590, 590] },
-            { name: "Stardew Valley", current: 315, status: "stable", history: [315, 315, 315, 315, 315, 315] },
-            { name: "Lethal Company", current: 195, status: "stable", history: [195, 195, 195, 195, 195, 195] },
-            { name: "EA SPORTS FC 24", current: 379, status: "down", history: [1899, 949, 569, 379, 379, 379] },
-            { name: "Call of Duty: MW III", current: 2490, status: "stable", history: [2490, 2490, 1743, 2490, 2490, 2490] },
-            { name: "Left 4 Dead 2", current: 33, status: "down", history: [330, 33, 330, 33, 33, 33] },
-            { name: "Terraria", current: 219, status: "stable", history: [219, 219, 109, 219, 219, 219] },
-            { name: "Rust", current: 699, status: "stable", history: [699, 699, 699, 468, 699, 699] },
-            { name: "Dead by Daylight", current: 369, status: "stable", history: [369, 184, 369, 369, 184, 369] },
-            { name: "Monster Hunter: World", current: 243, status: "down", history: [739, 243, 739, 243, 243, 243] },
-            { name: "Sekiro: Shadows Die Twice", current: 895, status: "down", history: [1790, 1790, 895, 1790, 895, 895] },
-            { name: "Tekken 8", current: 2190, status: "stable", history: [2190, 2190, 2190, 2190, 2190, 2190] }
+            { name: "Elden Ring", current: 1390, status: "down", history: [1790, 1790, 1790, 1590, 1390, 1390], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1245620/header.jpg", dev: "FromSoftware", genre: "Action RPG", desc: "เกมแนว Action RPG โลกกว้างแนวแฟนตาซีที่ผสมผสานความท้าทายสไตล์ Souls-like เข้ากับการสำรวจอิสระ ผลงานจากการร่วมมือกับ George R. R. Martin" },
+            { name: "Baldur's Gate 3", current: 1999, status: "stable", history: [1999, 1999, 1999, 1999, 1999, 1999], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1086940/header.jpg", dev: "Larian Studios", genre: "RPG", desc: "สุดยอดเกมสวมบทบาทแห่งปีที่สร้างจากจักรวาล Dungeons & Dragons มีเนื้อเรื่องที่แตกแขนงได้มหาศาลและอิสระในการเล่นสูง" },
+            { name: "Cyberpunk 2077", current: 890, status: "down", history: [1899, 1290, 890, 890, 1290, 890], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/header.jpg", dev: "CD PROJEKT RED", genre: "Action RPG / Sci-Fi", desc: "ผจญภัยใน Night City มหานครแห่งอนาคตที่เต็มไปด้วยเทคโนโลยี การดัดแปลงร่างกาย และเรื่องราวสุดดาร์ก" },
+            { name: "Helldivers 2", current: 1290, status: "stable", history: [1290, 1290, 1290, 1290, 1290, 1290], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2535030/header.jpg", dev: "Arrowhead Game", genre: "Co-op Shooter", desc: "รับบทเป็นทหารหน่วย Helldivers ร่วมมือกับเพื่อนกอบกู้จักรวาลจากเอเลี่ยนในเกมยิงมุมมองบุคคลที่ 3 สุดเดือด" },
+            { name: "Red Dead Redemption 2", current: 494, status: "down", history: [1499, 1499, 494, 1499, 494, 494], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1174180/header.jpg", dev: "Rockstar Games", genre: "Open World / Action", desc: "เรื่องราวมหากาพย์คาวบอยยุคคลาสสิกที่ใกล้ล่มสลาย กราฟิกสมจริงและโลกเปิดที่เต็มไปด้วยชีวิตชีวา" },
+            { name: "Grand Theft Auto V", current: 600, status: "stable", history: [600, 600, 300, 600, 600, 600], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/271590/header.jpg", dev: "Rockstar Games", genre: "Open World", desc: "สวมบทอาชญากร 3 คนในเมือง Los Santos ที่กว้างใหญ่และทำภารกิจปล้นสุดระทึก" },
+            { name: "Hogwarts Legacy", current: 950, status: "down", history: [1890, 1890, 1490, 950, 950, 950], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/990080/header.jpg", dev: "Avalanche Software", genre: "Action RPG", desc: "เติมเต็มความฝันวัยเด็กกับการเข้าเรียนในโรงเรียนเวทมนตร์ฮอกวอตส์ยุค 1800s สำรวจโลกเวทมนตร์อย่างอิสระ" },
+            { name: "The Witcher 3: Wild Hunt", current: 299, status: "down", history: [1059, 299, 1059, 299, 299, 299], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/header.jpg", dev: "CD PROJEKT RED", genre: "Action RPG", desc: "สวมบท Geralt of Rivia นักล่ามอนสเตอร์ในการตามหาลูกสาวบุญธรรมในโลกแฟนตาซีที่เต็มไปด้วยสงคราม" },
+            { name: "Palworld", current: 590, status: "up", history: [531, 531, 590, 590, 590, 590], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1623730/header.jpg", dev: "Pocketpair", genre: "Survival / Crafting", desc: "เกมเอาชีวิตรอดที่ให้คุณจับมอนสเตอร์ (Pal) มาช่วยต่อสู้ สร้างฐาน หรือแม้กระทั่งให้ทำงานในโรงงาน" },
+            { name: "Stardew Valley", current: 315, status: "stable", history: [315, 315, 315, 315, 315, 315], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/413150/header.jpg", dev: "ConcernedApe", genre: "Farming Sim", desc: "หลีกหนีความวุ่นวายมาฟื้นฟูฟาร์มเก่าของคุณปู่ ปลูกผัก เลี้ยงสัตว์ จีบสาว และสำรวจเหมือง" },
+            { name: "Lethal Company", current: 195, status: "stable", history: [195, 195, 195, 195, 195, 195], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1966720/header.jpg", dev: "Zeekerss", genre: "Co-op Horror", desc: "ร่วมมือกับเพื่อนไปเก็บเศษเหล็กในดาวร้างที่เต็มไปด้วยสัตว์ประหลาดดุร้ายเพื่อทำยอดให้บริษัท" },
+            { name: "EA SPORTS FC 24", current: 379, status: "down", history: [1899, 949, 569, 379, 379, 379], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2195250/header.jpg", dev: "EA Sports", genre: "Sports", desc: "ยุคใหม่ของเกมฟุตบอล (แทนที่ FIFA) พร้อมเทคโนโลยี HyperMotionV ที่ให้แอนิเมชันสมจริงที่สุด" },
+            { name: "Call of Duty", current: 2490, status: "stable", history: [2490, 2490, 1743, 2490, 2490, 2490], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1938090/header.jpg", dev: "Infinity Ward", genre: "FPS", desc: "สุดยอดแฟรนไชส์เกมยิงมุมมองบุคคลที่หนึ่ง โหมด Multiplayer สุดมันส์และระบบ Gunsmith ที่แต่งปืนได้ลึก" },
+            { name: "Left 4 Dead 2", current: 33, status: "down", history: [330, 33, 330, 33, 33, 33], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/550/header.jpg", dev: "Valve", genre: "Co-op Zombie FPS", desc: "เกมยิงซอมบี้ Co-op ระดับตำนานที่ยังคงมีผู้เล่นหนาแน่น พร้อมระบบ AI Director ที่ทำให้ทุกรอบไม่ซ้ำกัน" },
+            { name: "Terraria", current: 219, status: "stable", history: [219, 219, 109, 219, 219, 219], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg", dev: "Re-Logic", genre: "Sandbox / Survival", desc: "ขุด สร้าง ต่อสู้ ในโลก 2D ที่เต็มไปด้วยความลับ บอสสุดโหด และไอเทมให้คราฟต์นับพันชิ้น" },
+            { name: "Rust", current: 699, status: "stable", history: [699, 699, 699, 468, 699, 699], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/252490/header.jpg", dev: "Facepunch Studios", genre: "Survival / PvP", desc: "ตื่นขึ้นมาตัวเปล่าบนเกาะ หาหิน ตัดไม้ สร้างฐาน และระวังผู้เล่นคนอื่นที่พร้อมจะปล้นคุณทุกเมื่อ" },
+            { name: "Dead by Daylight", current: 369, status: "stable", history: [369, 184, 369, 369, 184, 369], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/381210/header.jpg", dev: "Behaviour Interactive", genre: "Asymmetrical Horror", desc: "เกมวิ่งไล่จับสุดระทึกแบบ 4vs1 ที่หนึ่งคนรับบทเป็นฆาตกร และอีกสี่คนต้องซ่อมเครื่องปั่นไฟเพื่อหนีเอาชีวิตรอด" },
+            { name: "Monster Hunter: World", current: 243, status: "down", history: [739, 243, 739, 243, 243, 243], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/582010/header.jpg", dev: "CAPCOM", genre: "Action RPG", desc: "ตามล่ามอนสเตอร์ขนาดยักษ์ในระบบนิเวศที่มีชีวิตชีวา นำชิ้นส่วนมาคราฟต์อาวุธและชุดเกราะสุดเท่" },
+            { name: "Sekiro: Shadows Die Twice", current: 895, status: "down", history: [1790, 1790, 895, 1790, 895, 895], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/814380/header.jpg", dev: "FromSoftware", genre: "Action / Souls-like", desc: "รับบทนินจาแขนกลในยุคเซ็งโงะกุ เน้นการปัดป้อง (Parry) ที่แม่นยำและการต่อสู้ที่รวดเร็วและท้าทายสุดๆ" },
+            { name: "Tekken 8", current: 2190, status: "stable", history: [2190, 2190, 2190, 2190, 2190, 2190], img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1778820/header.jpg", dev: "Bandai Namco", genre: "Fighting", desc: "สานต่อตำนานความแค้นสายเลือดมิชิมะ ภาคใหม่ล่าสุดของเกมต่อสู้ 3D ที่กราฟิกสวยงามอลังการที่สุด" }
         ];
 
-        // สร้างกราฟ
+        // ตั้งค่ากราฟ Chart.js
         const ctx = document.getElementById('priceChart').getContext('2d');
         let priceChart = new Chart(ctx, {
             type: 'line',
@@ -162,70 +210,65 @@
             options: {
                 responsive: true,
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#333' }
-                    },
-                    x: {
-                        grid: { color: '#333' }
-                    }
+                    y: { beginAtZero: true, grid: { color: '#333' } },
+                    x: { grid: { color: '#333' } }
                 },
-                plugins: {
-                    legend: { display: false }
-                }
+                plugins: { legend: { display: false } }
             }
         });
 
-        // ฟังก์ชันอัปเดตกราฟและไฮไลต์เมนู
-        function updateChart(gameIndex) {
+        // ฟังก์ชันอัปเดตข้อมูลทั้งหมดเมื่อคลิกเลือกเกม
+        function updateDashboard(gameIndex) {
             const game = gameData[gameIndex];
-            document.getElementById('selected-game').innerText = game.name;
             
-            // เปลี่ยนสีกราฟตามสถานะราคา
+            // 1. อัปเดตกราฟ
+            document.getElementById('selected-game').innerText = game.name;
             let lineColor = game.status === 'down' ? '#2ed573' : (game.status === 'up' ? '#ff4757' : '#00ffcc');
             let bgColor = game.status === 'down' ? 'rgba(46, 213, 115, 0.1)' : (game.status === 'up' ? 'rgba(255, 71, 87, 0.1)' : 'rgba(0, 255, 204, 0.1)');
-
             priceChart.data.datasets[0].data = game.history;
             priceChart.data.datasets[0].borderColor = lineColor;
             priceChart.data.datasets[0].backgroundColor = bgColor;
             priceChart.data.datasets[0].pointBorderColor = lineColor;
             priceChart.update();
 
-            // จัดการคลาส active ให้รายชื่อที่ถูกคลิก
+            // 2. อัปเดตรายละเอียดเกม (รูปภาพและข้อความ)
+            document.getElementById('detail-image').src = game.img;
+            document.getElementById('detail-title').innerText = game.name;
+            document.getElementById('detail-dev').innerText = `ผู้พัฒนา: ${game.dev}`;
+            document.getElementById('detail-genre').innerText = `แนวเกม: ${game.genre}`;
+            document.getElementById('detail-desc').innerText = game.desc;
+
+            // 3. จัดการคลาส active สำหรับเมนู
             document.querySelectorAll('.game-item').forEach((item, idx) => {
-                if (idx === gameIndex) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
+                if (idx === gameIndex) item.classList.add('active');
+                else item.classList.remove('active');
             });
         }
 
-        // สร้างรายการเกม Top 20
+        // สร้างรายการเกม
         const gameContainer = document.getElementById('game-container');
         gameData.forEach((game, index) => {
             const div = document.createElement('div');
-            div.className = `game-item ${index === 0 ? 'active' : ''}`; // เลือกเกมแรกเป็นค่าเริ่มต้น
+            div.className = `game-item`; 
             
-            // กำหนดสีตัวเลขและลูกศร
-            let priceClass = '';
-            let arrow = '';
-            if (game.status === 'down') { priceClass = 'price-down'; arrow = '▼'; }
-            else if (game.status === 'up') { priceClass = 'price-up'; arrow = '▲'; }
-            else { priceClass = 'price-stable'; arrow = '-'; }
+            let priceClass = game.status === 'down' ? 'price-down' : (game.status === 'up' ? 'price-up' : 'price-stable');
+            let arrow = game.status === 'down' ? '▼' : (game.status === 'up' ? '▲' : '-');
 
             div.innerHTML = `
                 <div>
                     <span class="rank">#${index + 1}</span>
                     <span class="game-title">${game.name}</span>
                 </div>
-                <span class="game-price ${priceClass}">
-                    ฿${game.current} ${arrow}
-                </span>
+                <span class="game-price ${priceClass}">฿${game.current} ${arrow}</span>
             `;
-            div.onclick = () => updateChart(index);
+            // เมื่อคลิกให้เรียกฟังก์ชัน updateDashboard
+            div.onclick = () => updateDashboard(index);
             gameContainer.appendChild(div);
         });
+
+        // โหลดข้อมูลเกมแรกสุด (Elden Ring) ขึ้นมาแสดงตอนเปิดเว็บ
+        updateDashboard(0);
+
     </script>
 </body>
 </html>
