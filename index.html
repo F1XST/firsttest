@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Price Stock</title>
+    <title>Game Price Stock - Top 20</title>
     <!-- โหลด Chart.js สำหรับทำกราฟ -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -15,18 +15,24 @@
             padding: 20px;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
         }
         h1 {
             text-align: center;
             color: #00ffcc;
             text-transform: uppercase;
+            margin-bottom: 30px;
         }
         .dashboard {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 2fr 1fr; /* แบ่งเลย์เอาต์: กราฟใหญ่กว่ารายชื่อ */
             gap: 20px;
+        }
+        @media (max-width: 800px) {
+            .dashboard {
+                grid-template-columns: 1fr; /* ถ้าจอเล็ก ให้เรียงบนลงล่าง */
+            }
         }
         .card {
             background-color: #1e1e1e;
@@ -34,48 +40,75 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .game-list {
+        .game-list-container {
+            max-height: 500px; /* จำกัดความสูงของกระดานเกม */
+            overflow-y: auto;  /* เพิ่ม Scrollbar แนวนอนเมื่อเกมเยอะ */
+            padding-right: 10px;
+        }
+        /* ตกแต่ง Scrollbar ให้เข้ากับธีม */
+        .game-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .game-list-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        .game-list-container::-webkit-scrollbar-thumb:hover {
+            background: #00ffcc;
+        }
+
+        .game-item {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             background-color: #2a2a2a;
-            padding: 15px;
-            margin-bottom: 10px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
             border-radius: 8px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: 0.2s;
+            border-left: 4px solid transparent;
         }
-        .game-list:hover {
+        .game-item:hover, .game-item.active {
             background-color: #3a3a3a;
             border-left: 4px solid #00ffcc;
         }
         .game-title {
             font-weight: bold;
+            font-size: 0.95em;
         }
         .game-price {
             color: #ff4757;
             font-weight: bold;
+            font-size: 0.95em;
         }
-        .price-down {
-            color: #2ed573; /* สีเขียวเวลาราคาลง (ดีต่อคนซื้อ) */
+        .price-down { color: #2ed573; } /* เขียว */
+        .price-up { color: #ff4757; }   /* แดง */
+        .price-stable { color: #a4b0be; } /* เทา */
+        
+        .rank {
+            color: #888;
+            font-size: 0.8em;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🎮 Game Price Index (GTX)</h1>
+        <h1>🎮 Game Price Index (Top 20)</h1>
         
         <div class="dashboard">
             <!-- ส่วนแสดงกราฟ -->
             <div class="card">
-                <h2>📈 แนวโน้มราคา: <span id="selected-game">Elden Ring</span></h2>
+                <h2>📈 แนวโน้มราคา 6 เดือนย้อนหลัง: <br><span id="selected-game" style="color:#00ffcc;">Elden Ring</span></h2>
                 <canvas id="priceChart"></canvas>
             </div>
 
-            <!-- ส่วนรายชื่อเกม -->
+            <!-- ส่วนรายชื่อเกม (มี Scrollbar) -->
             <div class="card">
-                <h2>กระดานราคาเกม (คลิกเพื่อดูกราฟ)</h2>
-                <div id="game-container">
+                <h2>กระดานราคา (คลิกเพื่อดู)</h2>
+                <div class="game-list-container" id="game-container">
                     <!-- รายชื่อเกมจะถูกสร้างด้วย JavaScript -->
                 </div>
             </div>
@@ -83,79 +116,113 @@
     </div>
 
     <script>
-        // ข้อมูลจำลองของเกมและประวัติราคา (อารมณ์เหมือนกราฟหุ้น 6 เดือนย้อนหลัง)
+        // ข้อมูลจำลองเกม Top 20 พร้อมประวัติราคา 6 เดือน (ม.ค. - มิ.ย.)
         const gameData = [
-            {
-                id: 1,
-                name: "Elden Ring",
-                currentPrice: 1390,
-                status: "down",
-                history: [1790, 1790, 1590, 1590, 1390, 1390] // มกราคม - มิถุนายน
-            },
-            {
-                id: 2,
-                name: "Cyberpunk 2077",
-                currentPrice: 890,
-                status: "down",
-                history: [1899, 1290, 990, 890, 1290, 890]
-            },
-            {
-                id: 3,
-                name: "Grand Theft Auto V",
-                currentPrice: 600,
-                status: "stable",
-                history: [600, 450, 600, 300, 600, 600]
-            }
+            { name: "Elden Ring", current: 1390, status: "down", history: [1790, 1790, 1790, 1590, 1390, 1390] },
+            { name: "Baldur's Gate 3", current: 1999, status: "stable", history: [1999, 1999, 1999, 1999, 1999, 1999] },
+            { name: "Cyberpunk 2077", current: 890, status: "down", history: [1899, 1290, 890, 890, 1290, 890] },
+            { name: "Helldivers 2", current: 1290, status: "stable", history: [1290, 1290, 1290, 1290, 1290, 1290] },
+            { name: "Red Dead Redemption 2", current: 494, status: "down", history: [1499, 1499, 494, 1499, 494, 494] },
+            { name: "Grand Theft Auto V", current: 600, status: "stable", history: [600, 600, 300, 600, 600, 600] },
+            { name: "Hogwarts Legacy", current: 950, status: "down", history: [1890, 1890, 1490, 950, 950, 950] },
+            { name: "The Witcher 3: Wild Hunt", current: 299, status: "down", history: [1059, 299, 1059, 299, 299, 299] },
+            { name: "Palworld", current: 590, status: "up", history: [531, 531, 590, 590, 590, 590] },
+            { name: "Stardew Valley", current: 315, status: "stable", history: [315, 315, 315, 315, 315, 315] },
+            { name: "Lethal Company", current: 195, status: "stable", history: [195, 195, 195, 195, 195, 195] },
+            { name: "EA SPORTS FC 24", current: 379, status: "down", history: [1899, 949, 569, 379, 379, 379] },
+            { name: "Call of Duty: MW III", current: 2490, status: "stable", history: [2490, 2490, 1743, 2490, 2490, 2490] },
+            { name: "Left 4 Dead 2", current: 33, status: "down", history: [330, 33, 330, 33, 33, 33] },
+            { name: "Terraria", current: 219, status: "stable", history: [219, 219, 109, 219, 219, 219] },
+            { name: "Rust", current: 699, status: "stable", history: [699, 699, 699, 468, 699, 699] },
+            { name: "Dead by Daylight", current: 369, status: "stable", history: [369, 184, 369, 369, 184, 369] },
+            { name: "Monster Hunter: World", current: 243, status: "down", history: [739, 243, 739, 243, 243, 243] },
+            { name: "Sekiro: Shadows Die Twice", current: 895, status: "down", history: [1790, 1790, 895, 1790, 895, 895] },
+            { name: "Tekken 8", current: 2190, status: "stable", history: [2190, 2190, 2190, 2190, 2190, 2190] }
         ];
 
-        // ตั้งค่าเริ่มต้นของกราฟ
+        // สร้างกราฟ
         const ctx = document.getElementById('priceChart').getContext('2d');
         let priceChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.'], // แกน X (เวลา)
+                labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.'],
                 datasets: [{
                     label: 'ราคา (บาท)',
-                    data: gameData[0].history, // ดึงข้อมูลเกมแรกมาแสดงก่อน
+                    data: gameData[0].history,
                     borderColor: '#00ffcc',
                     backgroundColor: 'rgba(0, 255, 204, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.3 // ทำให้เส้นกราฟโค้งมน
+                    tension: 0.3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#00ffcc',
+                    pointRadius: 4
                 }]
             },
             options: {
                 responsive: true,
                 scales: {
                     y: {
-                        beginAtZero: false
+                        beginAtZero: true,
+                        grid: { color: '#333' }
+                    },
+                    x: {
+                        grid: { color: '#333' }
                     }
+                },
+                plugins: {
+                    legend: { display: false }
                 }
             }
         });
 
-        // ฟังก์ชันสำหรับอัปเดตกราฟเมื่อคลิกเลือกเกม
+        // ฟังก์ชันอัปเดตกราฟและไฮไลต์เมนู
         function updateChart(gameIndex) {
             const game = gameData[gameIndex];
             document.getElementById('selected-game').innerText = game.name;
             
+            // เปลี่ยนสีกราฟตามสถานะราคา
+            let lineColor = game.status === 'down' ? '#2ed573' : (game.status === 'up' ? '#ff4757' : '#00ffcc');
+            let bgColor = game.status === 'down' ? 'rgba(46, 213, 115, 0.1)' : (game.status === 'up' ? 'rgba(255, 71, 87, 0.1)' : 'rgba(0, 255, 204, 0.1)');
+
             priceChart.data.datasets[0].data = game.history;
+            priceChart.data.datasets[0].borderColor = lineColor;
+            priceChart.data.datasets[0].backgroundColor = bgColor;
+            priceChart.data.datasets[0].pointBorderColor = lineColor;
             priceChart.update();
+
+            // จัดการคลาส active ให้รายชื่อที่ถูกคลิก
+            document.querySelectorAll('.game-item').forEach((item, idx) => {
+                if (idx === gameIndex) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
         }
 
-        // สร้างรายการเกมบนหน้าเว็บ
+        // สร้างรายการเกม Top 20
         const gameContainer = document.getElementById('game-container');
         gameData.forEach((game, index) => {
             const div = document.createElement('div');
-            div.className = 'game-list';
+            div.className = `game-item ${index === 0 ? 'active' : ''}`; // เลือกเกมแรกเป็นค่าเริ่มต้น
+            
+            // กำหนดสีตัวเลขและลูกศร
+            let priceClass = '';
+            let arrow = '';
+            if (game.status === 'down') { priceClass = 'price-down'; arrow = '▼'; }
+            else if (game.status === 'up') { priceClass = 'price-up'; arrow = '▲'; }
+            else { priceClass = 'price-stable'; arrow = '-'; }
+
             div.innerHTML = `
-                <span class="game-title">${game.name}</span>
-                <span class="game-price ${game.status === 'down' ? 'price-down' : ''}">
-                    ฿${game.currentPrice} 
-                    ${game.status === 'down' ? '▼' : '-'}
+                <div>
+                    <span class="rank">#${index + 1}</span>
+                    <span class="game-title">${game.name}</span>
+                </div>
+                <span class="game-price ${priceClass}">
+                    ฿${game.current} ${arrow}
                 </span>
             `;
-            // เพิ่ม Event เมื่อคลิกให้เปลี่ยนกราฟ
             div.onclick = () => updateChart(index);
             gameContainer.appendChild(div);
         });
